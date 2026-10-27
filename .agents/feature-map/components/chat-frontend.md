@@ -597,3 +597,14 @@ Chat, search, and voice submission preserve drafts while readiness is unconfirme
 A failed Stop request leaves an acknowledged stream stoppable. The client keeps the draft and pauses queued sends.
 Pending readiness checks do not disable Stop when streaming resumes.
 History refresh preserves the selected source panel by its saved message ID.
+### Timeline classification after diagnostic packets
+
+`timeline/hooks/packetProcessor.ts` classifies each group when its first tool or display
+packet arrives. Debug and control packets can precede that event without hiding the group.
+The classification then stays fixed for mixed groups. `useTimelineHeader` uses the first
+rendered packet to choose the activity label, so leading debug packets cannot hide a tool name.
+
+
+Timeline groups use their first rendered packet for classification and header text.
+Debug and heartbeat packets can arrive first without hiding later tool output.
+Once classified, a mixed group keeps its original tool or display category.
