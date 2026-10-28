@@ -876,7 +876,9 @@ family keep the source's shape and stay usable by that source only.
   the tabular/CSV staging path in `cross_connector_utils/tabular_section_utils.py`.
   `backend/onyx/file_processing/extract_file_text.py:extract_text_and_images`
   is where a connector hands off a raw file for parsing into
-  `TextSection`/`ImageSection` content.
+  `TextSection`/`ImageSection` content. Object-storage connectors (blob) build
+  each `Document` from a downloaded file through
+  `cross_connector_utils/storage_file_document.py:build_storage_file_document`.
 - [[background-jobs]]: every fetch, prune, hierarchy-fetch, and targeted-reindex
   run is a Celery task driving this component's interfaces.
 - [[access-control]]: `ExternalAccess` is defined and consumed there; a
