@@ -3,8 +3,7 @@
 import { memo, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { ADMIN_ROUTES } from "@/lib/admin-routes";
-import Text from "@/refresh-components/texts/Text";
-import { Button, Divider } from "@opal/components";
+import { Text, Button, Divider } from "@opal/components";
 import LLMProviderCard from "@/lib/onboarding/components/LLMProviderCard";
 import {
   OnboardingActions,
@@ -74,8 +73,8 @@ const StackedProviderIcons = ({ providers }: StackedProviderIconsProps) => {
             zIndex: 0,
           }}
         >
-          <Text as="p" text03 secondaryBody>
-            +{providers.length - 3}
+          <Text as="p" color="text-03" font="secondary-body">
+            {`+${providers.length - 3}`}
           </Text>
         </div>
       )}
@@ -248,7 +247,7 @@ const LLMStep = memo(
           <StackedProviderIcons
             providers={onboardingState.data.llmProviders || []}
           />
-          <Text as="p" text04 mainUiAction>
+          <Text as="p" color="text-04" font="main-ui-action">
             {t("llmStep.connectedCount.label", {
               count: onboardingState.data.llmProviders?.length || 0,
             })}
