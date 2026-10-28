@@ -2,8 +2,7 @@
 
 import React, { useRef } from "react";
 import { useTranslations } from "next-intl";
-import Text from "@/refresh-components/texts/Text";
-import { Button, InputTypeIn } from "@opal/components";
+import { Text, Button, InputTypeIn } from "@opal/components";
 import {
   OnboardingState,
   OnboardingActions,
@@ -95,11 +94,11 @@ const NameStep = React.memo(
                 "w-5 h-5"
               )}
             >
-              <Text as="p" inverted secondaryBody>
-                {userName?.[0]?.toUpperCase()}
+              <Text as="p" color="text-inverted-05" font="secondary-body">
+                {userName?.[0]?.toUpperCase() ?? ""}
               </Text>
             </InputAvatar>
-            <Text as="p" text04 mainUiAction>
+            <Text as="p" color="text-04" font="main-ui-action">
               {userName}
             </Text>
           </div>

@@ -2,8 +2,7 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import Text from "@/refresh-components/texts/Text";
-import { InputTypeIn } from "@opal/components";
+import { Text, InputTypeIn } from "@opal/components";
 import { updateUserPersonalization } from "@/lib/users/svc";
 import { useUser } from "@/providers/UserProvider";
 import { Button } from "@opal/components";
@@ -150,11 +149,11 @@ export default function NonAdminStep() {
                   "w-5 h-5"
                 )}
               >
-                <Text as="p" inverted secondaryBody>
-                  {savedName?.[0]?.toUpperCase()}
+                <Text as="p" color="text-inverted-05" font="secondary-body">
+                  {savedName?.[0]?.toUpperCase() ?? ""}
                 </Text>
               </InputAvatar>
-              <Text as="p" text04 mainUiAction>
+              <Text as="p" color="text-04" font="main-ui-action">
                 {savedName}
               </Text>
             </div>
