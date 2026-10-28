@@ -11,10 +11,13 @@ from onyx.connectors.cross_connector_utils.tabular_section_utils import (
     extract_and_stage_tabular_file,
     is_tabular_file,
 )
-from onyx.connectors.models import Document, ImageSection, TextSection
+from onyx.connectors.models import Document, ImageSection, TabularSection, TextSection
 from onyx.file_processing.extract_file_text import extract_text_and_images, get_file_ext
 from onyx.file_processing.file_types import OnyxFileExtensions
-from onyx.file_processing.image_utils import store_image_and_create_section
+from onyx.file_processing.image_utils import (
+    make_image_callback,
+    store_image_and_create_section,
+)
 from onyx.file_store.staging import RawFileCallback
 from onyx.utils.logger import setup_logger
 
@@ -33,11 +36,14 @@ def build_storage_file_document(
     last_modified: datetime,
     image_file_id: str,
     raw_file_callback: RawFileCallback | None,
+    include_embedded_images: bool,
 ) -> Document | None:
     """Converts a downloaded storage object into a ``Document``.
 
     Image files become one image section, tabular files become tabular
-    sections, and every other file goes through text extraction. Returns None
+    sections, and every other file goes through text extraction. With
+    ``include_embedded_images``, images inside a document are stored as image
+    sections under ``image_file_id``. Returns None
     when the file yields nothing to index. Raises on extraction and file-store
     errors, so the caller decides how a failed file is reported.
     """
@@ -89,12 +95,18 @@ def build_storage_file_document(
             file_id=result.staged_file_id,
         )
 
+    sections: list[TextSection | ImageSection | TabularSection] = []
     extraction_result = extract_text_and_images(
-        BytesIO(file_bytes), file_name=file_name
+        BytesIO(file_bytes),
+        file_name=file_name,
+        image_callback=(
+            make_image_callback(sections, image_file_id, file_name, link)
+            if include_embedded_images
+            else None
+        ),
     )
     onyx_metadata, custom_tags = process_onyx_metadata(extraction_result.metadata)
     link = onyx_metadata.link or link
-    sections: list[TextSection | ImageSection] = []
     if text := extraction_result.text_content.strip():
         sections.append(TextSection(link=link, text=text))
     return Document(
