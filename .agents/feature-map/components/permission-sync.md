@@ -34,7 +34,7 @@ actually written into the index once it changes ([[document-index]] and
 An admin turns on permission sync by setting a connector's access type to
 **Sync** (or **Sync (restricted)**) instead of Public or Private, for a source that supports it (Google
 Drive, Confluence, Jira, Slack, Box, Canvas, GitHub, SharePoint, OneDrive, Teams, Outlook,
-Gmail, Linear, HubSpot, YouTrack; Salesforce is a partial case, see §4.5). With `SYNC_RESTRICTED`, the sync is the
+Gmail, Linear, HubSpot, YouTrack, Azure Data Lake Storage; Salesforce is a partial case, see §4.5). With `SYNC_RESTRICTED`, the sync is the
 same, but only members of the connector's data-access groups can see the documents their
 source ACL allows (see [[access-control]]). From that point, Onyx does not
 decide who can see a document. The source system does, and Onyx mirrors it.
@@ -97,6 +97,7 @@ only added to `beat_task_templates` when the build ships the EE code
 | Salesforce | none (`doc_sync_config=None`) | none; `censoring_config` only (§4.5) |
 | HubSpot | `HUBSPOT_PERMISSION_DOC_SYNC_FREQUENCY` (1 h); `initial_index_should_sync=False` (the crawl never fetches viewers, so only the doc sync grants access; a targeted reindex (`HubSpotConnector.reindex`) on a perm-synced cc-pair also sets access, with the same `HubSpotPermissionReader`) | no group sync; stores the viewer emails HubSpot's permitted-users API returns |
 | YouTrack | `YOUTRACK_PERMISSION_DOC_SYNC_FREQUENCY` (30 min); `initial_index_should_sync=False`, so an issue stays private until the first doc sync lists it | `YOUTRACK_PERMISSION_GROUP_SYNC_FREQUENCY` (30 min); per project a readers group (Read Issue and Read Issue Comment through project, organization or global roles) and an Override Visibility group, plus one group per visibility entry restricted issues name, intersected with the readers except in helpdesk projects |
+| Azure Data Lake | `AZURE_DATALAKE_PERMISSION_DOC_SYNC_FREQUENCY` (1 h); `initial_index_should_sync=False`, so a file stays private until the first doc sync lists it. A file's readers are its RBAC readers (role assignments at the container scope or above whose role reads blobs, minus deny assignments; conditioned assignments are left out and reported) plus its ACL readers: read on the file intersected with execute on every directory above it. `ee/onyx/external_permissions/azure_datalake/principals.py` keeps these sets at group level and expands to users only where two different groups meet or an ACL denies part of a group or of `other`, up to `AZURE_DATALAKE_MAX_EXPANDED_USERS_PER_DOC` (25,000); above it the file stays private. `other` is the synced `entra_tenant_everyone:<tenant>` group. Anonymous container access is `is_public` | `AZURE_DATALAKE_PERMISSION_GROUP_SYNC_FREQUENCY` (30 min); every Entra group with its transitive users, plus the tenant-everyone group (every enabled member and guest) |
 
 Every value is env-overridable and is additionally multiplied by
 `OnyxRuntime.get_doc_permission_sync_multiplier()` in
@@ -223,7 +224,7 @@ in every connector SDK.
 Perm-sync capability checks (`validate_perm_sync` probes and named checks) are
 dispatched from `ee/onyx/connectors/capability_checks.py` and `perm_sync_valid.py`. The
 check implementations live in the connector modules. Confluence, Google Drive, OneDrive,
-Outlook, SharePoint, GitHub, Slack, HubSpot, and YouTrack have named perm-sync checks. See [[connectors]] §4.8.
+Outlook, SharePoint, GitHub, Slack, HubSpot, YouTrack, and Azure Data Lake have named perm-sync checks. See [[connectors]] §4.8.
 
 ### 4.2 Doc sync flow
 
@@ -291,8 +292,8 @@ Most doc-sync implementations funnel through
    reporting it, so Onyx makes it private. This is the fail-closed default for
    the "document disappeared or the user lost access" case.
 
-Confluence, Jira, Canvas, Box, SharePoint, OneDrive, Teams, Outlook, HubSpot, and YouTrack doc_sync
-(`ee/onyx/external_permissions/{confluence,jira,canvas,box,sharepoint,onedrive,teams,outlook,hubspot,youtrack}/doc_sync.py`)
+Confluence, Jira, Canvas, Box, SharePoint, OneDrive, Teams, Outlook, HubSpot, YouTrack, and Azure Data Lake doc_sync
+(`ee/onyx/external_permissions/{confluence,jira,canvas,box,sharepoint,onedrive,teams,outlook,hubspot,youtrack,azure_datalake}/doc_sync.py`)
 are thin wrappers around `generic_doc_sync`, differing only in which connector
 class and `DocumentSource` they pass. Four sources have a different
 shape: Slack and Google Drive (below), and Gmail and GitHub (own `doc_sync.py`, no
