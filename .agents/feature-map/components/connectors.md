@@ -459,7 +459,7 @@ whose required permission depends on an argument) onto each public method;
 method on the subclass lacks the stamp, or if the subclass overrides
 `__init__`. Operations must return plain data, never live SDK objects, because
 lazily-evaluated SDK attribute access (PyGithub, office365) can fire network
-calls outside any wrapper. Only Slack, Confluence, OneDrive, Outlook, Jira, Linear, HubSpot, Google Drive, Notion, SharePoint, GitHub, YouTrack, and Asana have
+calls outside any wrapper. Only Slack, Confluence, OneDrive, Outlook, Jira, Linear, HubSpot, Google Drive, Notion, SharePoint, GitHub, YouTrack, Asana, and Azure Data Lake have
 a gateway today (`<source>/source_operations.py`); most connectors still call their SDK directly.
 SharePoint's gateway is also the only importer of `msal`, `requests` and `office365`
 under `connectors/sharepoint/` and `ee/.../external_permissions/sharepoint/`. Its
@@ -503,7 +503,7 @@ calls run one at a time.
 `EXTERNAL_GROUP_SYNC`) is the vocabulary. `capability_checks/applicability.py`
 decides which capabilities apply to a source on this build (CE: `INDEXING`
 only; EE adds the perm-sync ones). `capability_checks/registry.py` maps a
-source to named `CapabilityCheck`s (only Slack, Confluence, OneDrive, Outlook, Jira, Linear, HubSpot, Google Drive, Notion, SharePoint, GitHub, YouTrack, and Asana
+source to named `CapabilityCheck`s (only Slack, Confluence, OneDrive, Outlook, Jira, Linear, HubSpot, Google Drive, Notion, SharePoint, GitHub, YouTrack, Asana, and Azure Data Lake
 register real ones today; every other source gets a synthesized fallback wrapping
 `validate_connector_settings`, the generic "Test connection" row of
 `capability_checks/generic_row.py`. A source whose connector keeps the no-op
@@ -805,10 +805,12 @@ page inside a space) is in both rows, but never in "other". The counts come from
 
 `credential_families.py` lets related sources share one stored credential: Atlassian
 (Confluence, Jira), Google (Gmail, Drive), and Microsoft (SharePoint, OneDrive,
-Outlook, Teams). Each source has a `FamilyCredentialCodec`.
+Outlook, Teams, Azure Data Lake). Each source has a `FamilyCredentialCodec`.
 `to_source_credential_json` converts the family shape back to the source's own keys,
 so a connector reads only its own keys. Credentials created before a source joined a
-family keep the source's shape and stay usable by that source only.
+family keep the source's shape and stay usable by that source only. So does a new
+credential that its codec's `stores_in_family` refuses: an Azure Data Lake account
+key is not an app registration, so no other Microsoft source can use it.
 
 ---
 
@@ -906,7 +908,7 @@ family keep the source's shape and stay usable by that source only.
 | changes `interfaces.py` (adds/renames a base class or method) | `factory.py:_validate_connector_supports_input_type` and `identify_connector_class`; `connector_runner.py`'s `isinstance` branches; every connector implementing the affected interface |
 | changes checkpoint serialization (`ConnectorCheckpoint` or a subclass) | `validate_checkpoint_json` for that connector; any in-flight, persisted checkpoint from a prior run becomes unreadable, which [[indexing-pipeline]]'s resume logic must handle |
 | changes `capabilities.py` or the `CredentialCapability` enum | `capability_checks/applicability.py`, `registry.py`, `runner.py`, and the `credential_capability_report` schema; the admin UI surface that reads capability reports |
-| changes `source_operations.py`'s decorator or `SourceOperations` base | every existing gateway (`slack`, `confluence`, `onedrive`, `outlook`, `jira`, `linear`, `hubspot`, `google_drive`, `notion`, `sharepoint`, `github`, `youtrack` `source_operations.py`) and the import-fence test guarding SDK imports |
+| changes `source_operations.py`'s decorator or `SourceOperations` base | every existing gateway (`slack`, `confluence`, `onedrive`, `outlook`, `jira`, `linear`, `hubspot`, `google_drive`, `notion`, `sharepoint`, `github`, `youtrack`, `asana`, `azure_datalake` `source_operations.py`) and the import-fence test guarding SDK imports |
 | changes pruning's diff logic | the invariant in §5.5; verify a connector auth failure still raises rather than producing an empty slim result |
 | touches `credentials_provider.py` | the Redis lock TTL and rotation semantics for every `CredentialsConnector`; static-credential paths used by daily tests |
 
@@ -998,8 +1000,8 @@ lack of a key, ask instead. The shared helper
   not assume a checkpoint is small or simple when reasoning about serialization
   changes.
 - **`SourceOperations` is opt-in and mostly unused.** Only Slack, Confluence,
-  OneDrive, Outlook, Jira, Linear, HubSpot, Google Drive, Notion, SharePoint, GitHub, and YouTrack have a gateway; most connectors still make source-API
-  calls inline, so the "one file that talks to the source" guarantee only holds for those twelve today.
+  OneDrive, Outlook, Jira, Linear, HubSpot, Google Drive, Notion, SharePoint, GitHub, YouTrack, Asana, and Azure Data Lake have a gateway; most connectors still make source-API
+  calls inline, so the "one file that talks to the source" guarantee only holds for those fourteen today.
 - **`include_attachments` default differs by connector age.** New connectors
   default to `False`; connectors retrofitted with the flag default to `True`
   to preserve existing behavior for connector rows that predate the setting.

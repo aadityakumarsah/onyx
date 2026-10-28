@@ -40,6 +40,7 @@ def _build(
         last_modified=LAST_MODIFIED,
         image_file_id="s3_bucket_dir_image",
         raw_file_callback=raw_file_callback,
+        include_embedded_images=False,
     )
 
 
